@@ -386,6 +386,8 @@ prometheus-example-app-69986d5b8-ct85v   0/1     Pending             0          
 prometheus-example-app-69986d5b8-xnhlh   0/1     Pending             0          7s
 ```
 
+A total of 10 pods will be created.
+
 ### 5. Verify Node Autoscaling
 
 Check that Karpenter has provisioned additional nodes to accommodate the scaled pods:
@@ -436,6 +438,16 @@ Access the Grafana UI and import an HPA dashboard, e.g.: https://grafana.com/gra
 You will see the HPA event we just triggered:
 
 ![grafana dashboard hpa](./images/grafana_dashboard_hpa.png)
+
+## Understanding Metric Resets During Karpenter Pod Disruptions
+
+When Karpenter manages node provisioning and termination, it may occasionally disrupt pods by moving them to different nodes. This disruption impacts how we measure `http_requests_total`, creating potential issues with our metrics collection.
+
+When pod disruption occurs, the old pods are terminated, taking their accumulated `http_requests_total` counter values with them. The new pods that replace them start fresh with their counters at zero. This reset creates a temporary but significant drop in our metrics.
+
+Our query `sum(http_requests_total)` will show sudden drops during these transitions. Since new pods have no request history and the old pods' metrics are gone, the sum may plummet or even hit zero. This behavior is normal but needs to be considered when choosing metrics, setting up HPA thresholds and monitoring alerts to avoid false scaling triggers during pod transitions.
+
+This situation highlights why production environments need carefully chosen metrics and properly tuned scaling parameters that account for such infrastructure changes.
 
 ## Security
 
