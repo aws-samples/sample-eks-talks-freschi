@@ -135,6 +135,12 @@ The `s0-prometheus` naming convention serves multiple purposes:
 
 ### HPA Integration Analysis
 
+In this example, we'll use the `http_requests_total` metric to HPA functionality. This metric counts total HTTP requests and provides an easy way to trigger scaling events by simply generating traffic to our service.
+
+While this works well for learning and testing purposes, it's important to note that in production environments, you'll need to carefully select metrics that truly reflect your application's workload and performance requirements. Production metrics will vary significantly based on your specific use case. For instance, a message processing service might scale based on queue length, while a customer-facing API might scale on request latency. Compute-intensive applications often scale on CPU utilization, and connection-bound services might scale based on concurrent connections. Data processing applications commonly use memory consumption as their scaling metric.
+
+The key is selecting metrics that align with your application's bottlenecks and business requirements. For now, http_requests_total serves as a clear, easily controllable metric for understanding how HPA works.
+
 Examine the HPA that KEDA automatically creates:
 
 ```bash
