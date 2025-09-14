@@ -88,8 +88,9 @@ kubectl get nodes -o json|jq -Cjr '.items[] | .metadata.name," ",.metadata.label
 
 Expected output:
 ```bash
-i-01a38bcf5fff91cfa c6g.large arm64
-i-0266e0af18e8581e1 c5a.large amd64
+i-09f8cc029971ea2bd c6g.large arm64
+i-0cdc488091ff514bd c5.large amd64
+i-0ca4843df75cdea84 c5a.large amd64
 ```
 
 ## Understanding Kubernetes API Aggregation and KEDA Integration
@@ -202,6 +203,7 @@ kubectl get hpa keda-hpa-example-app -n workload -o yaml
 ```
 
 Expected output:
+
 ```bash
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -388,10 +390,11 @@ kubectl get nodes -o json|jq -Cjr '.items[] | .metadata.name," ",.metadata.label
 
 Expected output showing new nodes:
 ```bash
-i-01a38bcf5fff91cfa c6g.large arm64
-i-0e22d3bb735cd21c8 c5a.xlarge amd64
-i-0568a1156f3475723 c5a.2xlarge amd64
-i-0266e0af18e8581e1 c5a.large amd64
+i-09f8cc029971ea2bd c6g.large arm64
+i-0cdc488091ff514bd c5.large amd64
+i-0ca4843df75cdea84 c5a.large amd64
+i-06f90868d790a5908 c5.large amd64
+i-05f57c38b7177eb1d c5.xlarge amd64
 ```
 
 Examine Karpenter NodeClaims:
@@ -402,11 +405,12 @@ kubectl get nodeclaim -A
 
 Expected output showing the recently created claims:
 ```bash
-NAME                    TYPE          CAPACITY    ZONE              NODE                  READY   AGE
-general-purpose-8f5g4   c5a.xlarge    on-demand   ap-northeast-1c   i-0e22d3bb735cd21c8   True    86s
-general-purpose-dcj98   c5a.2xlarge   on-demand   ap-northeast-1a   i-0568a1156f3475723   True    71s
-general-purpose-pp6dt   c5a.large     on-demand   ap-northeast-1c   i-0266e0af18e8581e1   True    178m
-system-mvd6p            c6g.large     on-demand   ap-northeast-1d   i-01a38bcf5fff91cfa   True    3h1m
+NAME                    TYPE        CAPACITY    ZONE              NODE                  READY   AGE
+demo-workload-5ft6t     c5.large    on-demand   ap-northeast-1d   i-06f90868d790a5908   True    87s
+demo-workload-7x6m4     c5.xlarge   on-demand   ap-northeast-1c   i-05f57c38b7177eb1d   True    72s
+demo-workload-d8q4c     c5.large    on-demand   ap-northeast-1c   i-0cdc488091ff514bd   True    12m
+general-purpose-lhmcz   c5a.large   on-demand   ap-northeast-1c   i-0ca4843df75cdea84   True    4h17m
+system-prjh2            c6g.large   on-demand   ap-northeast-1a   i-09f8cc029971ea2bd   True    4h22m
 ```
 
 ## Observability
@@ -423,8 +427,9 @@ kubectl port-forward svc/kube-prometheus-stack-grafana 3000:80 -n monitoring &
 
 Access the Grafana UI and import an HPA dashboard, e.g.: https://grafana.com/grafana/dashboards/22128-horizontal-pod-autoscaler-hpa/
 
-You will see the HPA event we just triggered.
+You will see the HPA event we just triggered:
 
+![grafana dashboard hpa](./images/grafana_dashboard_hpa.png)
 
 ## Security
 
