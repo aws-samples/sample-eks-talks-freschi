@@ -1,5 +1,6 @@
 # Amazon EKS patterns
 
+This repo contains various design patterns used in talks and enablement sessions. Please see folders for individual patterns.
 
 ## Security
 
