@@ -388,6 +388,14 @@ prometheus-example-app-69986d5b8-xnhlh   0/1     Pending             0          
 
 A total of 10 pods will be created.
 
+You can also monitor the progressive creation of pods and associated nodes with [k9s](https://k9scli.io/):
+
+![k9s](./images/k9s.png)
+
+And [eks-node-viewer](https://github.com/awslabs/eks-node-viewer):
+
+![eks-node-viewer](./images/eks_node_viewer.png)
+
 ### 5. Verify Node Autoscaling
 
 Check that Karpenter has provisioned additional nodes to accommodate the scaled pods:
