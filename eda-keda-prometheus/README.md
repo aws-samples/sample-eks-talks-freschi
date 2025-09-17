@@ -404,7 +404,7 @@ Check that Karpenter has provisioned additional nodes to accommodate the scaled 
 kubectl get nodes -o json|jq -Cjr '.items[] | .metadata.name," ",.metadata.labels."beta.kubernetes.io/instance-type"," ",.metadata.labels."beta.kubernetes.io/arch", "\n"'|sort -k3 -r
 ```
 
-Expected output showing new nodes:
+Expected output showing new nodes (node type, size and count may vary depending on Karpenter's selection and Amazon EC2 instance availability):
 ```bash
 i-09f8cc029971ea2bd c6g.large arm64
 i-0cdc488091ff514bd c5.large amd64
