@@ -58,7 +58,7 @@ spec:
             - containerPort: 8000
           env:
             - name: MODEL_PROVIDER
-              value: "bedrock"
+              value: "${MODEL_PROVIDER}"
             - name: BEDROCK_MODEL
               value: "anthropic.claude-sonnet-4-6"
             - name: AWS_REGION

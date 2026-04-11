@@ -91,6 +91,7 @@ data:
   ECR_REPO: "${ECR_REPO}"
   IMAGE_TAG: "${GIT_SHA}"
   AWS_REGION: "${AWS_DEFAULT_REGION}"
+  MODEL_PROVIDER: "bedrock"  # or "vllm" if using the vllm overlay
 EOF
 ```
 
@@ -99,12 +100,21 @@ EOF
 ```bash
 brew install fluxcd/tap/flux
 
+# Bedrock (default — no GPU needed):
 flux bootstrap github \
   --owner=${GITHUB_USER} \
   --repository=${GITHUB_REPO} \
   --branch=main \
   --personal \
-  --path=strands-agents-observability/cluster
+  --path=strands-agents-observability/cluster/overlays/bedrock
+
+# Or vLLM (self-hosted on GPU):
+# flux bootstrap github \
+#   --owner=${GITHUB_USER} \
+#   --repository=${GITHUB_REPO} \
+#   --branch=main \
+#   --personal \
+#   --path=strands-agents-observability/cluster/overlays/vllm
 ```
 
 6. **Monitor deployment**:
