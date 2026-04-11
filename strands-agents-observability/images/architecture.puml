@@ -22,7 +22,7 @@ rectangle "EKS Auto Mode + FluxCD" as eks #F0F4FF {
     component "SRE Agent\nFastAPI + Web UI" as agent
   }
 
-  rectangle "vLLM" as vn #F3E5F5 {
+  rectangle "vLLM (optional)" as vn #F3E5F5 {
     component "Llama 3.1 8B\n(GPU node)" as vllm
   }
 
@@ -34,6 +34,8 @@ rectangle "EKS Auto Mode + FluxCD" as eks #F0F4FF {
   }
 }
 
+cloud "Amazon Bedrock\n(default)" as bedrock #FCE4EC
+
 ' Workload chain
 nginx --> app : proxy
 app --> redis : connect
@@ -43,10 +45,10 @@ user --> agent : Chat UI
 user ..> wk : chaos inject
 
 ' Agent interactions
-agent --> vllm : LLM inference
+agent --> bedrock : LLM inference
+agent ..> vllm : LLM inference\n(if MODEL_PROVIDER=vllm)
 agent --> otel : OTLP traces
-agent ..> wk : kubectl (diagnose)
-agent ..> prom : PromQL
+agent ..> wk : kubectl (diagnose + fix)
 
 ' OTel pipeline
 otel --> jaeger : traces

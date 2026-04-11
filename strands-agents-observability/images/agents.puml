@@ -7,16 +7,16 @@ left to right direction
 
 title Agent-as-Tool Pattern — Detect → Diagnose → Fix
 
-rectangle "Orchestrator Loop\n(Python, every 60s)" as orch #F0F4FF {
+rectangle "Orchestrator Loop\n(Python, every 15s)" as orch #F0F4FF {
 
   rectangle "Detector Agent" as det #E8F5E9 {
     component "get_pod_status" as gps
-    component "get_events" as ge
     component "fix_issue\n(@tool)" as fi #FFF3E0
   }
 }
 
 rectangle "Fixer Agent\n(fresh context per call)" as fixer #FFF3E0 {
+  component "get_pod_status" as gps2
   component "get_pod_logs" as gpl
   component "get_events" as ge2
   component "describe_resource" as dr
