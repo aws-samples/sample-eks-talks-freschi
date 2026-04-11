@@ -1,6 +1,6 @@
 # Agent Observability Demo — SRE Agent on EKS with FluxCD
 
-An AI-powered SRE agent that diagnoses Kubernetes failures, deployed via FluxCD GitOps on EKS Auto Mode with self-hosted LLM inference (vLLM) and fully OSS observability.
+An AI-powered SRE agent that autonomously diagnoses and fixes Kubernetes failures, deployed via FluxCD GitOps on EKS Auto Mode with full OSS observability (Jaeger, Prometheus, Grafana). Supports Amazon Bedrock (default) or self-hosted vLLM.
 
 Code is provided as reference for demo purposes. In a production environment, restrict privileges according to the principle of least privilege.
 
@@ -74,10 +74,11 @@ docker push "${ECR_REPO}:${GIT_SHA}"
 4. **Create secrets and Flux ConfigMap**:
 
 ```bash
-kubectl create namespace vllm
-kubectl create secret generic hf-token \
-  --from-literal=token="${HF_TOKEN}" \
-  --namespace vllm
+# Only needed if using vLLM overlay:
+# kubectl create namespace vllm
+# kubectl create secret generic hf-token \
+#   --from-literal=token="${HF_TOKEN}" \
+#   --namespace vllm
 
 kubectl create namespace flux-system
 
@@ -160,9 +161,9 @@ Arrange all three browser windows side by side.
    - Tool call timing and inputs/outputs in span logs (click a span → "Logs" tab)
 
 8. **Check Grafana** — the "Agent Observability" dashboard shows:
-   - vLLM inference latency spiking during agent runs
    - Redis clients recovering after fixes
    - Nginx connections stabilizing
+   - vLLM inference latency (only when using vLLM overlay)
 
 9. The agent stops automatically when all pods are healthy.
 
@@ -177,8 +178,8 @@ The agent uses the **agent-as-tool** pattern from the Strands SDK with two coope
 
 ![Agent Architecture](./images/agents.png)
 
-- **Detector Agent** — lightweight scan. Calls `get_pod_status` and checks for error states (CrashLoopBackOff, OOMKilled, CreateContainerConfigError). If it finds a problem, it calls `fix_issue` with a description.
-- **Fixer Agent** — wrapped as a `@tool` so the detector can invoke it. Gets a fresh context with only the problem description. Diagnoses deeper with logs and events, then applies the fix. Verifies with `get_pod_status` after.
+- **Detector Agent** — lightweight scan. Calls `get_pod_status` and checks for error states (CrashLoopBackOff, OOMKilled, CreateContainerConfigError) or failing readiness probes (0/1 Running). If it finds a problem, it calls `fix_issue` with a description.
+- **Fixer Agent** — wrapped as a `@tool` so the detector can invoke it. Gets a fresh context with only the problem description. Diagnoses deeper with logs, events, and resource descriptions, then applies the fix. Verifies with `get_pod_status` after.
 
 #### Model configuration
 
@@ -186,10 +187,10 @@ The agent supports two model providers, configured via the `MODEL_PROVIDER` envi
 
 | Provider | Model | Pros | Cons |
 |---|---|---|---|
-| **bedrock** (default) | Claude Sonnet 4 | Reliable tool calling, strong reasoning, no GPU needed | API latency, pay-per-token |
+| **bedrock** (default) | Claude Sonnet 4.6 | Reliable tool calling, strong reasoning, no GPU needed | API latency, pay-per-token |
 | **vllm** (optional) | Llama 3.1 8B (self-hosted) | In-cluster, low latency, vLLM metrics in Grafana | Requires GPU node, weaker reasoning, needs tighter prompts |
 
-To switch to vLLM, set `MODEL_PROVIDER=vllm` in the agent-app manifest. The vLLM deployment and GPU NodePool are included but optional when using Bedrock.
+To switch providers, bootstrap with the corresponding overlay path (see [Bootstrap Flux](#5-bootstrap-flux)). The `MODEL_PROVIDER` value in the ConfigMap controls which model the agent uses.
 
 When using smaller self-hosted models, prompts need to be more prescriptive to avoid hallucinations (e.g. explicit error state allowlists, instructions to never use placeholder names). With Bedrock/Claude, the prompts can be more natural and workflow-oriented.
 
@@ -206,16 +207,19 @@ When using smaller self-hosted models, prompts need to be more prescriptive to a
 ```
 infra (Karpenter GPU NodePool)
   ├── observability (Jaeger, Prometheus, OTel Collector, Grafana)
-  ├── vllm (Llama 3.1 8B on GPU — optional)
+  │     └── agent-app (SRE agent — depends on observability)
+  ├── vllm (Llama 3.1 8B on GPU — optional, suspended by default)
   └── workload (nginx + sample-app + redis)
-        └── agent-app (SRE agent — depends on all above)
 ```
 
 ## Repo Structure
 
 ```
 ├── cluster/
-│   └── development.yaml              # Flux Kustomizations + dependency chain
+│   ├── base.yaml                     # Flux Kustomizations + dependency chain
+│   └── overlays/
+│       ├── bedrock/kustomization.yaml  # Bedrock mode (vLLM suspended)
+│       └── vllm/kustomization.yaml     # vLLM mode (GPU enabled)
 ├── infra/
 │   └── karpenter-gpu-nodepool.yaml   # GPU nodes for vLLM
 ├── observability/
@@ -228,7 +232,7 @@ infra (Karpenter GPU NodePool)
 ├── agent-app/
 │   ├── manifests.yaml                # K8s Deployment + Service + RBAC
 │   ├── app.py                        # FastAPI SRE agent (autonomous detect-fix loop)
-│   ├── tools.py                      # 5 diagnostic + 3 fix tools
+│   ├── tools.py                      # Diagnostic + fix tools (kubectl wrappers)
 │   ├── static/index.html             # Auto-fix web UI
 │   ├── Dockerfile
 │   └── requirements.txt
@@ -260,4 +264,7 @@ aws ecr delete-repository --repository-name "${CLUSTER_NAME}/agent-app" --region
 
 ## Cost
 
-~$1.50/hr while running (mostly the GPU node). Clean up when done.
+- **Bedrock mode**: ~$0.30/hr (EKS Auto Mode + Bedrock pay-per-token)
+- **vLLM mode**: ~$1.50/hr (mostly the GPU node)
+
+Clean up when done.
