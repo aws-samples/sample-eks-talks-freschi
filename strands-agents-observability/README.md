@@ -176,7 +176,7 @@ Arrange all three browser windows side by side.
 
 The agent uses the **agent-as-tool** pattern from the Strands SDK with two cooperating agents:
 
-![Agent Architecture](./images/agents.png)
+![Agent Architecture](./images/agents.svg)
 
 - **Detector Agent** — lightweight scan. Calls `get_pod_status` and checks for error states (CrashLoopBackOff, OOMKilled, CreateContainerConfigError) or failing readiness probes (0/1 Running). If it finds a problem, it calls `fix_issue` with a description.
 - **Fixer Agent** — wrapped as a `@tool` so the detector can invoke it. Gets a fresh context with only the problem description. Diagnoses deeper with logs, events, and resource descriptions, then applies the fix. Verifies with `get_pod_status` after.
@@ -200,7 +200,7 @@ When using smaller self-hosted models, prompts need to be more prescriptive to a
 
 ## Architecture
 
-![Architecture](./images/architecture.png)
+![Architecture](./images/architecture.svg)
 
 ## FluxCD Dependency Chain
 
