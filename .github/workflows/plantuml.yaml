@@ -16,7 +16,7 @@ jobs:
       - name: Generate PNGs
         uses: grassedge/generate-plantuml-action@v1.5
         with:
-          path: '**/images'
+          path: strands-agents-observability/images
           message: 'Auto-generate PlantUML diagrams'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
