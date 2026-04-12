@@ -1,4 +1,5 @@
 @startuml architecture
+' Regenerate PNGs
 !theme plain
 skinparam backgroundColor #FEFEFE
 skinparam componentStyle rectangle
