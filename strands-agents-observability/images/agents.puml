@@ -1,4 +1,5 @@
 @startuml agents
+' Regenerate
 !theme plain
 skinparam backgroundColor #FEFEFE
 skinparam defaultFontSize 12
