@@ -7,8 +7,8 @@ Code is provided as reference for demo purposes. In a production environment, re
 ## Prerequisites
 
 - AWS account
-- HuggingFace token (only needed if using vLLM with Llama)
 - **Fork this repository** (Flux will commit its files to it)
+- HuggingFace token (only if using vLLM overlay with Llama)
 
 ## Deployment
 
@@ -17,10 +17,11 @@ Code is provided as reference for demo purposes. In a production environment, re
 ```bash
 export CLUSTER_NAME=agent-obs-demo
 export AWS_DEFAULT_REGION=eu-west-2
-export HF_TOKEN=<your-huggingface-token>
 export GITHUB_TOKEN=<your-github-token>
 export GITHUB_USER=<your-github-user>
 export GITHUB_REPO=<your-forked-repo>
+# Only for vLLM overlay:
+# export HF_TOKEN=<your-huggingface-token>
 ```
 
 2. **Create the EKS cluster**:
@@ -41,7 +42,7 @@ iam:
   podIdentityAssociations:
     - namespace: agent-app
       serviceAccountName: sre-agent
-      createServiceAccount: false
+      createServiceAccount: true
       permissionPolicy:
         Version: "2012-10-17"
         Statement:
@@ -71,32 +72,7 @@ docker tag "${ECR_REPO}:latest" "${ECR_REPO}:${GIT_SHA}"
 docker push "${ECR_REPO}:${GIT_SHA}"
 ```
 
-4. **Create secrets and Flux ConfigMap**:
-
-```bash
-# Only needed if using vLLM overlay:
-# kubectl create namespace vllm
-# kubectl create secret generic hf-token \
-#   --from-literal=token="${HF_TOKEN}" \
-#   --namespace vllm
-
-kubectl create namespace flux-system
-
-cat << EOF | kubectl apply -f -
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cluster-config
-  namespace: flux-system
-data:
-  ECR_REPO: "${ECR_REPO}"
-  IMAGE_TAG: "${GIT_SHA}"
-  AWS_REGION: "${AWS_DEFAULT_REGION}"
-  MODEL_PROVIDER: "bedrock"  # or "vllm" if using the vllm overlay
-EOF
-```
-
-5. **Bootstrap Flux**:
+4. **Bootstrap Flux**:
 
 ```bash
 brew install fluxcd/tap/flux
@@ -116,6 +92,29 @@ flux bootstrap github \
 #   --branch=main \
 #   --personal \
 #   --path=strands-agents-observability/cluster/overlays/vllm
+```
+
+5. **Create Flux ConfigMap and secrets**:
+
+```bash
+# Only needed if using vLLM overlay:
+# kubectl create namespace vllm
+# kubectl create secret generic hf-token \
+#   --from-literal=token="${HF_TOKEN}" \
+#   --namespace vllm
+
+cat << EOF | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-config
+  namespace: flux-system
+data:
+  ECR_REPO: "${ECR_REPO}"
+  IMAGE_TAG: "${GIT_SHA}"
+  AWS_REGION: "${AWS_DEFAULT_REGION}"
+  MODEL_PROVIDER: "bedrock"  # or "vllm" if using the vllm overlay
+EOF
 ```
 
 6. **Monitor deployment**:
@@ -165,7 +164,7 @@ Arrange all three browser windows side by side.
    - Nginx connections stabilizing
    - vLLM inference latency (only when using vLLM overlay)
 
-9. The agent stops automatically when all pods are healthy.
+9. Once all pods are healthy, click ■ **Stop** or let it keep scanning.
 
 10. **Verify**:
 ```bash
@@ -205,10 +204,10 @@ When using smaller self-hosted models, prompts need to be more prescriptive to a
 ## FluxCD Dependency Chain
 
 ```
-infra (Karpenter GPU NodePool)
+infra (GPU NodePool — only used by vLLM)
   ├── observability (Jaeger, Prometheus, OTel Collector, Grafana)
-  │     └── agent-app (SRE agent — depends on observability)
-  ├── vllm (Llama 3.1 8B on GPU — optional, suspended by default)
+  │     └── agent-app (SRE agent)
+  ├── vllm (Llama 3.1 8B on GPU — suspended by default)
   └── workload (nginx + sample-app + redis)
 ```
 
