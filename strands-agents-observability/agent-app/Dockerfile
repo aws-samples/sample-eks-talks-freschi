@@ -1,5 +1,5 @@
 FROM python:3.12-slim
-RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends curl && \
     curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
     install kubectl /usr/local/bin/ && rm kubectl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
