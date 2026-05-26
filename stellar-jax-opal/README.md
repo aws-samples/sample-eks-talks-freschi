@@ -32,7 +32,15 @@ g = jax.grad(lambda m: evolve_star(m, Z=0.02, max_steps=5)['log_L'][-1])(1.0)
 ## Requirements
 
 - JAX with float64 support
-- OPAL opacity tables (`opal_4d.npz`) — not included, available from [OPAL project](https://opalopacity.llnl.gov/)
+- Two data files (not included — physics data, not code):
+  - `opal_4d.npz` — OPAL Rosseland mean opacity tables, available from [OPAL project](https://opalopacity.llnl.gov/)
+  - `eos_compact.npz` — OPAL EOS tables (pre-parsed), derived from [MESA EOS data](https://github.com/MESAHub/mesa)
+
+Place them in a `data/` subdirectory next to `stellar.py`, or set environment variables:
+```bash
+export STELLAR_OPAL_OPACITY=/path/to/opal_4d.npz
+export STELLAR_OPAL_EOS=/path/to/eos_compact.npz
+```
 
 ## Physics
 
