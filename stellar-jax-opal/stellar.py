@@ -53,7 +53,9 @@ SECONDS_PER_YEAR = 3.15576e7
 # ------------------------------------------------------------------
 # OPAL opacity tables
 # ------------------------------------------------------------------
-_op = np.load('/home/ec2-user/stellar-jax/data/opal/opal_4d.npz')
+_OPAL_OPACITY_PATH = os.environ.get('STELLAR_OPAL_OPACITY', 
+    os.path.join(os.path.dirname(__file__), 'data', 'opal_4d.npz'))
+_op = np.load(_OPAL_OPACITY_PATH)
 OPAL_X    = jnp.asarray(_op['X_grid'])
 OPAL_Z    = jnp.asarray(_op['Z_grid'])
 OPAL_LOGT = jnp.asarray(_op['logT_grid'])
@@ -111,7 +113,9 @@ def opal_kappa(logT, logRho, X, Z):
 # ------------------------------------------------------------------
 def _build_eos_pgrid():
     """Pre-compute EOS lookup table inverted onto a (X, Z, logT, logP) grid."""
-    eos = np.load('/home/ec2-user/stellar-jax-fortran-translation/workspace/opal/eos_compact.npz')
+    _OPAL_EOS_PATH = os.environ.get('STELLAR_OPAL_EOS',
+        os.path.join(os.path.dirname(__file__), 'data', 'eos_compact.npz'))
+    eos = np.load(_OPAL_EOS_PATH)
     X_grid    = eos['X_grid'].astype(np.float64)
     Z_grid    = eos['Z_grid'].astype(np.float64)
     logT_grid = eos['logT_grid'].astype(np.float64)
