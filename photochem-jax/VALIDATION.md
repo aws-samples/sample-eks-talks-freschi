@@ -15,9 +15,10 @@ Validated against VULCAN (Tsai et al. 2017, 2021) for HD 189733b with solar comp
 | Species | Max \|Δlog₁₀\| | Worst Level | T (K) | P (dyn/cm²) | Region |
 |---------|----------------|-------------|--------|--------------|--------|
 | CO | 0.74 dex | 117 | 4734 | 0.015 | Thermosphere |
+| NH3 | 1.43 dex | 41 | 1272 | 1.6×10⁵ | Quench region |
 | CH4 | 1.77 dex | 116 | 3484 | 0.019 | Thermosphere |
 | CO2 | 1.96 dex | 115 | 2340 | 0.023 | Upper atmosphere |
-| NH3 | 2.15 dex | 41 | 1272 | 1.6×10⁵ | Quench region |
+| H2S | 3.02 dex | — | — | — | Quench/upper |
 | H2O | 3.58 dex | 118 | 5745 | 0.012 | Thermosphere |
 
 ## Per-Region Analysis
@@ -46,7 +47,7 @@ Transport timescale becomes comparable to chemical timescale. Species "freeze" a
 | H2O | ≤ 0.2 dex | Quenches with CO |
 | CH4 | 0.5–1.2 dex | Quench value sensitive to τ_chem parameterization |
 | CO2 | 0.5–0.6 dex | Quench value slightly low |
-| NH3 | **2.2 dex** | Quench point at wrong pressure; N₂↔NH₃ timescale uncertain |
+| NH3 | **1.43 dex** | Quench point sensitive to N₂↔NH₃ timescale |
 
 The NH3 quench error (2.2 dex at levels 39–43) is the dominant mid-atmosphere limitation. The N₂↔NH₃ interconversion timescale from Moses et al. (2011) may not be accurate for this T/P regime.
 
@@ -82,7 +83,7 @@ JWST transmission spectroscopy probes pressures of ~10⁻¹ to 10⁴ dyn/cm² (r
 - **H2O**: ≤ 0.2 dex — **retrieval-ready**
 - **CO2**: 0.6 dex — usable with caveats
 - **CH4**: 1.2 dex — photodissociation region needs improvement
-- **NH3**: 2.2 dex — quench parameterization needs work
+- **NH3**: 1.43 dex — quench parameterization improving
 
 ## Context: How Accurate Are Other Codes?
 

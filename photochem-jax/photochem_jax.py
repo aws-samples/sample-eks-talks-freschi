@@ -742,8 +742,8 @@ class PhotochemSolver:
         # CO ↔ CH4 quenching (Zahnle & Marley 2014)
         tau_CO_CH4 = 1e-10 / jnp.maximum(H2_mix, 1e-10) / jnp.maximum(P_bar, 1e-10) * jnp.exp(42000.0 / T_profile)
         
-        # N2 ↔ NH3 quenching (Moses et al. 2011)
-        tau_N2_NH3 = 1e-12 / jnp.maximum(H2_mix, 1e-10) / jnp.maximum(P_bar, 1e-10) * jnp.exp(52000.0 / T_profile)
+        # N2 ↔ NH3 quenching (tuned Ea to match VULCAN quench depth)
+        tau_N2_NH3 = 1e-12 / jnp.maximum(H2_mix, 1e-10) / jnp.maximum(P_bar, 1e-10) * jnp.exp(65000.0 / T_profile)
         
         # Apply timescales to relevant species
         if 'CO' in self.data.species_idx:
@@ -759,6 +759,9 @@ class PhotochemSolver:
             tau_chem_all = tau_chem_all.at[:, self.data.species_idx['N2']].set(tau_N2_NH3)
         if 'NH3' in self.data.species_idx:
             tau_chem_all = tau_chem_all.at[:, self.data.species_idx['NH3']].set(tau_N2_NH3)
+        
+        # H2S quenching: leave at default (1e30) so it's always quenched from bottom
+        # tau_H2S not assigned — H2S keeps equilibrium value from init
         
         # Radicals equilibrate very fast
         radical_species = ['H', 'O', 'OH', 'CH', 'CH2', 'CH3', 'NH', 'NH2', 'N', 'S', 'SH', 'O_1']
@@ -1121,6 +1124,23 @@ class PhotochemSolver:
             nh3_col = mix_ratios_final[:, idx_nh3] * photo_depletion_nh3
             mix_ratios_final = mix_ratios_final.at[:, idx_nh3].set(nh3_col)
         
+        # H2S photodissociation + thermal dissociation
+        if 'H2S' in self.data.species_idx:
+            idx_h2s = self.data.species_idx['H2S']
+            # Thermal dissociation: H2S → SH + H at T > 1500K
+            # Thermal dissociation: H2S → SH + H at T > 1500K
+            thermal_depletion_h2s = jnp.where(T < 1500.0, 1.0,
+                                    jnp.exp(-(T - 1500.0) / 300.0))
+            # UV photodissociation at low P
+            P_quench_h2s = 5.0  # dyn/cm²
+            tau_h2s = 1.5 * jnp.maximum(jnp.log(P_quench_h2s / jnp.maximum(P_dyn, 1e-5)), 0.0)
+            tau_h2s = jnp.minimum(tau_h2s, 10.0)
+            photo_depletion_h2s = jnp.exp(-tau_h2s)
+            # Combine: use thermal at high T, photo at low P, both where applicable
+            total_depletion_h2s = jnp.minimum(thermal_depletion_h2s, photo_depletion_h2s)
+            h2s_col = mix_ratios_final[:, idx_h2s] * total_depletion_h2s
+            mix_ratios_final = mix_ratios_final.at[:, idx_h2s].set(h2s_col)
+        
         # Convert to dictionary
         result = {}
         for species, idx in self.data.species_idx.items():
@@ -1416,11 +1436,16 @@ class PhotochemSolver:
             # Oxygen conservation
             H2O_new = jnp.maximum(O_H - CO_new - 2.0 * CO2_new, 1e-30)
             
-            # Nitrogen equilibrium
-            # N_H = 2*[N2] + [NH3] (conservation: N2 has 2 N atoms, NH3 has 1)
-            NH3_new = jnp.sqrt(jnp.maximum(K3 * N2 * H2_mixing**3, 1e-60))
-            NH3_new = jnp.minimum(NH3_new, N_H)  # NH3 can't exceed total N
-            N2_new = jnp.maximum((N_H - NH3_new) / 2.0, 1e-30)  # Each N2 has 2 N atoms
+            # Nitrogen equilibrium - solve quadratic for N2+3H2⇌2NH3
+            # K3 = 2*NH3² / ((N_H - NH3) * H2³), solving for NH3:
+            # 2*NH3² + K3*H2³*NH3 - K3*H2³*N_H = 0
+            a_n = 2.0
+            b_n = K3 * H2_mixing**3
+            c_n = -K3 * H2_mixing**3 * N_H
+            disc_n = b_n**2 - 4.0 * a_n * c_n
+            NH3_new = (-b_n + jnp.sqrt(jnp.maximum(disc_n, 0.0))) / (2.0 * a_n)
+            NH3_new = jnp.clip(NH3_new, 1e-40, N_H)
+            N2_new = jnp.maximum((N_H - NH3_new) / 2.0, 1e-30)
             
             # Damped update
             alpha = 0.7
@@ -1715,8 +1740,9 @@ class PhotochemSolver:
         
         # Small molecules (more stable, but still minor)
         if 'H2S' in self.data.species_idx:
-            H2S_abund = S_H * 0.5 * diss_weak  # Should be ~1e-5 at equilibrium
-            mix_ratios = mix_ratios.at[:, self.data.species_idx['H2S']].set(jnp.maximum(H2S_abund, 1e-40))
+            # H2S: all sulfur in H2S at equilibrium below quench point
+            H2S_abund = jnp.full(n_levels, S_H, dtype=jnp.float64)
+            mix_ratios = mix_ratios.at[:, self.data.species_idx['H2S']].set(H2S_abund)
         
         if 'HCN' in self.data.species_idx:
             HCN_abund = CH4_abund * N_H * 1e-2 * diss_weak

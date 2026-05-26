@@ -101,7 +101,9 @@ Reaction network from VULCAN (Tsai et al. 2021). NASA9 data from Burcat & Ruscic
 Validated against VULCAN for HD 189733b (see `VALIDATION.md`):
 - CO: 0.74 dex (thermosphere only; ≤0.2 dex in observable atmosphere)
 - H2O: ≤0.2 dex in observable atmosphere
-- CH4, NH3: 1–2 dex (photodissociation region)
+- NH3: 1.43 dex (quench region)
+- CH4: 1.77 dex (photodissociation region)
+- H2S: 3.02 dex (first implementation, thermal + UV parameterization)
 
 ## Limitations
 
